@@ -6,3 +6,29 @@ output: github_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+
+```{r task}
+# Your tasks is to create a linear model that best predicts the sentiment of the sentiment score for a news items’ headline.
+```
+
+```{r load-packages, message=FALSE}
+library(tidyverse)
+library(tidymodels)
+```
+
+```{r load-data}
+news <- read.csv("~/STA 631/Mini Comp/activity04-mini-competition/competition-files/data/news.csv")
+```
+
+```{r distribution-plots}
+ggplot(news, aes(y = SentimentHeadline)) +
+  geom_boxplot(fill = "grey") +
+  ggtitle("Box Plot of Sentiment Headline") +
+  ylab("Sentiment Headline")
+
+ggplot(news, aes(x=SentimentHeadline, y=GooglePlus)) +
+  geom_point(size=2, shape=23)
+
+
+```
+

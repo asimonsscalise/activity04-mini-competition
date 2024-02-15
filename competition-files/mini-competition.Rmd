@@ -14,21 +14,122 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r load-packages, message=FALSE}
 library(tidyverse)
 library(tidymodels)
+library(car)
+library(caret)
 ```
 
 ```{r load-data}
 news <- read.csv("~/STA 631/Mini Comp/activity04-mini-competition/competition-files/data/news.csv")
 ```
 
-```{r distribution-plots}
-ggplot(news, aes(y = SentimentHeadline)) +
-  geom_boxplot(fill = "grey") +
-  ggtitle("Box Plot of Sentiment Headline") +
-  ylab("Sentiment Headline")
+```{r descriptive-statistics}
+# Generate descriptive statistics for numerical variables
+summary(news)
 
-ggplot(news, aes(x=SentimentHeadline, y=GooglePlus)) +
-  geom_point(size=2, shape=23)
+# Check for missing values
+colSums(is.na(news))
+```
 
+
+```{r Visualization}
+# Histogram of SentimentTitle
+ggplot(news, aes(x = SentimentTitle)) + 
+  geom_histogram(binwidth = 0.05, fill = "blue", color = "black") +
+  ggtitle("Distribution of SentimentTitle")
+
+# Histogram of SentimentHeadline
+ggplot(news, aes(x = SentimentHeadline)) + 
+  geom_histogram(binwidth = 0.05, fill = "red", color = "black") +
+  ggtitle("Distribution of SentimentHeadline")
+```
+```{r cont Viz}
+# Boxplot of SentimentTitle by Topic
+ggplot(news, aes(x = Topic, y = SentimentTitle)) + 
+  geom_boxplot() +
+  ggtitle("SentimentTitle by Topic")
+
+# Boxplot of SentimentHeadline by Topic
+ggplot(news, aes(x = Topic, y = SentimentHeadline)) + 
+  geom_boxplot() +
+  ggtitle("SentimentHeadline by Topic")
+```
+```{r correlation}
+# Correlation matrix for sentiment scores and social feedback counts
+cor(news[, c("SentimentTitle", "SentimentHeadline", "Facebook", "GooglePlus", "LinkedIn")], use = "complete.obs")
 
 ```
+```{r data preparation}
+# Convert factors to dummy variables
+news <- news %>%
+  mutate(Topic = as.factor(Topic)) %>%
+  mutate_at(vars(Topic), funs(as.integer))
+```
+
+```{r split train}
+# Split the data into training and testing sets
+set.seed(123) # Set a seed for reproducibility
+training_indices <- createDataPartition(news$SentimentHeadline, p = 0.8, list = FALSE)
+training_data <- news[training_indices, ]
+testing_data <- news[-training_indices, ]
+```
+
+```{r fit}
+# Fit the linear model on the training data
+model <- lm(SentimentHeadline ~ SentimentTitle + Facebook + GooglePlus + LinkedIn + Topic, data = training_data)
+
+# Summary of the model
+summary(model)
+
+```
+
+```{r prediction}
+# Predict on the testing data
+predictions <- predict(model, testing_data)
+```
+
+```{r evaluation}
+# Evaluate the model
+actual <- testing_data$SentimentHeadline
+predicted <- predictions
+results <- data.frame(Actual = actual, Predicted = predicted)
+
+```
+
+```{r metrics}
+# Calculate metrics
+MAE <- mean(abs(actual - predicted))
+MSE <- mean((actual - predicted)^2)
+RMSE <- sqrt(MSE)
+
+# Output the results
+list(MAE = MAE, MSE = MSE, RMSE = RMSE)
+```
+```{r resd plot}
+# Visualizing the Residuals
+residuals <- actual - predicted
+plot(predicted, residuals, main="Residuals vs Predicted", xlab="Predicted", ylab="Residuals", pch=19)
+abline(h=0, col="red")
+```
+```{r rsquare}
+# Calculating R-squared value
+SST <- sum((actual - mean(actual))^2)
+SSR <- sum((predicted - mean(actual))^2)
+R_squared <- SSR / SST
+```
+
+```{r mean prediction}
+# Comparing to a naive baseline (mean prediction)
+mean_sentiment_score <- mean(training_data$SentimentHeadline)
+baseline_errors <- actual - mean_sentiment_score
+baseline_MAE <- mean(abs(baseline_errors))
+baseline_MSE <- mean(baseline_errors^2)
+baseline_RMSE <- sqrt(baseline_MSE)
+
+# Output R-squared and baseline comparison
+list(R_squared = R_squared,
+     Baseline_MAE = baseline_MAE,
+     Baseline_MSE = baseline_MSE,
+     Baseline_RMSE = baseline_RMSE)
+```
+
 
